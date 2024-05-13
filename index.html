@@ -1,0 +1,105 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script type="importmap">
+    {
+      "imports": {
+        "vue": "https://unpkg.com/vue@3/dist/vue.esm-browser.js"
+      }
+    }
+  </script>
+</head>
+
+<body>
+  <div id="app">
+    <!-- 
+        interface Validator {
+          address: string;
+          penalizedCount: number;
+          slotsAssignedCount: number;
+          batchNumber: number;
+          epochNumber: number;
+        }
+      -->
+    <div v-if="validatorsJSON">
+      <select v-model="chosenValidator">
+        <option v-for="validator in Object.keys(validatorsJSON)" :value="validator">{{ validator }}</option>
+      </select>
+    </div>
+    <div class="container mx-auto p-2 flex flex-wrap gap-4">
+      <div v-for="epoch in groupedData" :key="epoch.epochNumber" class="mb-4">
+        <h2 class="text-lg font-bold text-center">Epoch {{ epoch.epochNumber }}</h2>
+        <div class="grid grid-cols-[repeat(30,1fr)] gap-1">
+          <div v-for="batch in epoch.batches" :key="batch.id" :title="batch.batchNumber"
+            :class="{'bg-red-500': batch.penalized, 'bg-green-400': batch.rewarded}"
+            class="h-1 w-1 rounded-full bg-gray-400">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+
+<script type="module">
+  import { createApp } from 'vue'
+
+  createApp({
+    data() {
+      return {
+        message: 'Hello Vue!',
+        validatorsJSON: null,
+        chosenValidator: '',
+      }
+    },
+    mounted() {
+      fetch('validators.json')
+        .then(response => response.json())
+        .then(data => {
+          this.validatorsJSON = data;
+          this.chosenValidator = Object.keys(data)[0];
+          // console.log(data);
+          console.log('Fetched validators.json');
+        })
+        .catch(error => console.error('Error:', error));
+    },
+    computed: {
+      groupedData() {
+        console.log("Computing Validator Data")
+        if (!this.validatorsJSON || !this.chosenValidator) return;
+        const validatorData = this.validatorsJSON[this.chosenValidator];
+        const grouped = validatorData
+          .flatMap(item => ({ [item.epochNumber]: item }))
+          .reduce((acc, item) => {
+            const epochNumber = Object.keys(item)[0];
+            const batch = item[epochNumber];
+
+            // Initialize the group if it doesn't exist
+            if (!acc[epochNumber]) {
+              acc[epochNumber] = {
+                epochNumber: parseInt(epochNumber),
+                batches: []
+              };
+            }
+
+            // Check if the batch is already included to avoid duplication
+            const isBatchAlreadyIncluded = acc[epochNumber].batches.some(batchItem => batchItem.id === batch.id);
+
+            if (!isBatchAlreadyIncluded) {
+              acc[epochNumber].batches.push(batch);
+            }
+
+            return acc;
+          }, {});
+
+
+        return Object.values(grouped);
+      }
+    }
+  }).mount('#app')
+</script>
+
+</html>

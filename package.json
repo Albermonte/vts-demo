@@ -1,0 +1,19 @@
+{
+  "name": "vts-demo",
+  "module": "index.ts",
+  "type": "module",
+  "scripts": {
+    "start": "bun run index.ts",
+    "dev": "bun --hot run index.ts",
+    "generate": "bun start && bun run generateGraph.ts && npx serve"
+  },
+  "devDependencies": {
+    "bun-types": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "nimiq-rpc-client-ts": "^0.3.0"
+  }
+}
