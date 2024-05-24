@@ -1,5 +1,5 @@
 import { Database } from "bun:sqlite";
-import { BlockType, Client, InherentType } from "nimiq-rpc-client-ts";
+import { BlockType, Client, InherentType, PolicyConstants } from "nimiq-rpc-client-ts";
 
 if (!Bun.env.RPC_URL) throw new Error("RPC_URL is not set");
 
@@ -7,11 +7,11 @@ const url = new URL(Bun.env.RPC_URL);
 const client = new Client(url);
 const db = new Database("mydb.sqlite", { create: true });
 
-const policies = await client.policy.getPolicyConstants();
-const initialBlock = 8806739;
-// const initialBlock = 0;
-const blocksPerBatch = policies.data?.blocksPerBatch || 60;
-const batchesPerEpoch = policies.data?.batchesPerEpoch || 360;
+const { data: policy, error: errorPolicy } = await client.policy.getPolicyConstants();
+if (errorPolicy || !policy) throw new Error(errorPolicy.message || 'No policy constants')
+
+const { blocksPerBatch, batchesPerEpoch, genesisBlockNumber } = policy as PolicyConstants & { blockSeparationTime: number, genesisBlockNumber: number }
+const initialBlock = genesisBlockNumber;
 
 process.on("SIGINT", () => {
   console.log("\nCaught interrupt signal, closing DB");

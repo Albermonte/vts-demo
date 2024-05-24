@@ -14,6 +14,6 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "nimiq-rpc-client-ts": "^0.3.0"
+    "nimiq-rpc-client-ts": "latest"
   }
 }

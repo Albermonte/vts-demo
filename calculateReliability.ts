@@ -1,5 +1,5 @@
 import { Database } from "bun:sqlite";
-import { Client } from "nimiq-rpc-client-ts";
+import { Client, PolicyConstants } from "nimiq-rpc-client-ts";
 
 if (!Bun.env.RPC_URL) throw new Error("RPC_URL is not set");
 
@@ -8,7 +8,7 @@ const client = new Client(url);
 const db = new Database("mydb.sqlite");
 const { data: policyConstants } = await client.policy.getPolicyConstants();
 if (!policyConstants) throw new Error("Could not get policy constants");
-const { blocksPerBatch } = policyConstants
+const { blocksPerBatch } = policyConstants as PolicyConstants & { blockSeparationTime: number, genesisBlockNumber: number }
 // TODO: time between blocks can be different than 1 minute
 
 // Parameter determining how much the observation of the oldest batch is worth relative to the observation of the newest batch
@@ -30,6 +30,8 @@ interface ValidatorsReliability {
 }
 
 const getBatch = db.prepare("SELECT * FROM validators WHERE batchNumber = ?");
+// Get the highest batch number
+const getBatchCount = db.prepare("SELECT MAX(batchNumber) as count FROM validators");
 
 const calculateReliability = (validator: ValidatorRow[], n = 1) => {
   let sumNumerator = 0;
@@ -54,7 +56,7 @@ const calculateReliability = (validator: ValidatorRow[], n = 1) => {
 };
 
 const validators = [];
-const numberOfBatches = 10000;
+const numberOfBatches = (getBatchCount.get() as {count: number}).count;
 
 // TODO: get batches starting from last one
 console.log(`Getting ${numberOfBatches} batches...`);
